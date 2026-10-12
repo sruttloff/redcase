@@ -1,12 +1,10 @@
 
-class Redcase::EnvironmentsController < ApplicationController
-
-	unloadable
+class Redcase::EnvironmentsController < Redcase::BaseController
 	helper RedcaseHelper
 	before_action :find_project, :authorize
 
 	def index
-		environment = ExecutionEnvironment.find(
+		environment = @project.execution_environments.find(
 			params[:execution_environment_id]
 		)
 		render(
@@ -16,28 +14,19 @@ class Redcase::EnvironmentsController < ApplicationController
 	end
 
 	def create
-		params.permit!
-		environment = ExecutionEnvironment.new(params[:execution_environment])
-		environment.project_id = @project.id
-		environment.save
+		environment = @project.execution_environments.create!(environment_params)
 		render :json => environment
 	end
 
 	def update
-		params.permit!
-		environment = ExecutionEnvironment.find(params[:id])
-		environment.update(params[:execution_environment])
-		if params[:execution_environment][:project_id]
-			environment.project_id = params[:execution_environment][:project_id]
-		end
-		environment.save
+		environment = @project.execution_environments.find(params[:id])
+		environment.update!(environment_params)
 		# TODO: Properly handle the case when this fails.
 		render :json => { :success => true }
 	end
 
 	def destroy
-		params.permit!
-		environment = ExecutionEnvironment.find(params[:id])
+		environment = @project.execution_environments.find(params[:id])
 		environment.destroy
 		# TODO: Properly handle the case when this fails.
 		render :json => { :success => true }
@@ -48,6 +37,12 @@ class Redcase::EnvironmentsController < ApplicationController
 	#       share in descendants.
 	def find_project
 		@project = Project.find(params[:project_id])
+	end
+
+	private
+
+	def environment_params
+		params.require(:execution_environment).permit(:name, :description)
 	end
 
 end

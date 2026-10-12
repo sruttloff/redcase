@@ -11,11 +11,12 @@
 %>
 <%=
 	link_to image_tag(
-		'report.png',
+		'save.png',
 		:plugin => 'redcase',
-		:size => '95x36',
+		:alt => '',
+		:size => '20x20',
 		:style => 'vertical-align: middle'
-	), {
+	) + ' ' + l('redcase.label_export_csv'), {
 		:controller => 'redcase/export',
 		:action => :index,
 		:export_to => :excel,

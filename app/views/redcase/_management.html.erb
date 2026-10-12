@@ -5,7 +5,7 @@
 <% Project.allowed_to(:add_issues).where('id <> ?', @project.id).each { |op| %>
 		Redcase.jsCopyToMenuItems.push({
 			id: '<%= op.id %>',
-			text: '<%= op.name.gsub(/'/, "\\\\'") %>'
+			text: <%= raw(op.name.to_json) %>
 		});
 <% } %>
 		Redcase.TestSuiteTree.initialize();
@@ -17,7 +17,7 @@
 	<tr>
 		<!-- Test suites management -->
 		<td id="management_test_suites_id">
-			<h3><%= l('label_test_suites') %></h3>
+			<h3><%= l('redcase.label_test_suites') %></h3>
 			<div id="management_test_suite_tree_id" class="redcase_tree" />
 		</td>
 		<!-- Execution suites management -->

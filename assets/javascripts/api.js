@@ -3,7 +3,18 @@ var Redcase = {
 
 	log: LogManager.getLog('redcase'),
 
-	context: 'redcase/',
+	context: '',
+
+	t: function(key, values) {
+		var text = this.translations[key] || key;
+		return text.replace(/%\{(\w+)\}/g, function(match, name) {
+			return values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match;
+		});
+	},
+
+	resultLabel: function(name) {
+		return this.resultLabels[name] || name;
+	},
 
 	jsCopyToMenuItems: [],
 
@@ -14,7 +25,7 @@ var Redcase = {
 			actions: {
 				getAttachmentURLs: function() {
 					return {
-						method: Redcase.methods.redcase.controller + '/get_attachment_urls',
+						method: 'get_attachment_urls',
 						httpMethod: 'GET'
 					}
 				}
@@ -208,7 +219,7 @@ var Redcase = {
 					parameters.error(errorThrown, textStatus, jqXHR);
 				}
 				Redcase.errorBox(parameters.errorMessage);
-				this.log.debug(errorThrown);
+				Redcase.log.debug(errorThrown);
 			},
 			complete: function() {
 				if (parameters.complete) {
@@ -222,9 +233,11 @@ var Redcase = {
 	errorBox: function(errorMessage) {
 		$('#redcase-error-message').text(errorMessage);
 		$('#redcase-error').dialog({
+			title: Redcase.t('error'),
 			modal: true,
+			closeText: Redcase.t('close'),
 			buttons: {
-				OK: function() {
+				[Redcase.t('ok')]: function() {
 					$(this).dialog('close');
 				}
 			}

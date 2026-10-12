@@ -6,13 +6,13 @@
 <table class="redcase-row" style="width: 100%; margin: 0px; text-align: center">
 	<tr style="font-weight: bold; background-color: #507aaa; color: white; text-align: center; vertical-align: top">
 		<td style="width: 45px; vertical-align: middle; border-left-width: 0px; border-top-width: 0px; padding: 6px">
-			<%= l('label_id') %>
+			<%= l('redcase.label_id') %>
 		</td>
 		<td style="width: 110px; vertical-align: middle; border-top-width: 0px; padding: 6px">
-			<%= l('label_name') %>
+			<%= l('redcase.label_name') %>
 		</td>
 		<td style="width: 80px; vertical-align: middle; border-top-width: 0px; padding: 6px">
-			<%= l('label_date') %>
+			<%= l('redcase.label_date') %>
 		</td>
 		<td style="width: 115px; vertical-align: middle; border-top-width: 0px; padding: 6px">
 			<%=
@@ -20,15 +20,15 @@
 					'filter_id',
 					nil,
 					ExecutionResult.all.collect { |x|
-						[x.name, x.id]
-					} << ['All results', 0] << ['Not passed'],
-					{ :selected => 0 },
+						[redcase_result_label(x.name), x.name]
+					} << [l('redcase.label_all_results'), 'all'] << [l('redcase.label_not_passed'), 'not_passed'],
+					{ :selected => 'all' },
 					{ :style => 'width: 100%' }
 				)
 			%>
 		</td>
 		<td style="vertical-align: middle; border-top-width: 0px; padding: 6px">
-			<%= l('label_executor') %>
+			<%= l('redcase.label_executor') %>
 		</td>
 		<td style="width: 25px; vertical-align: middle; border-right-width: 0px; border-top-width: 0px; padding: 6px">
 			&nbsp;
@@ -70,8 +70,9 @@
 			%>
 		</td>
 		<td><%= x.created_on.strftime("%Y-%m-%d %H:%M") %></td>
-		<td><%= x.result.name %></td>
+		<td><%= redcase_result_label(x.result.name) %></td>
 		<td>
+			<% if x.executor %>
 			<%=
 				link_to(
 					x.executor, {
@@ -82,6 +83,7 @@
 					:target => '_blank'
 				)
 			%>
+			<% end %>
 		</td>
 		<td style="border-right-width: 0px">
 			<% if !x.comment.blank? then %>
@@ -91,6 +93,7 @@
 						image_tag(
 							'info.png',
 							:plugin => 'redcase',
+							:alt => l('redcase.label_show_comment'),
 							:size=> '16x16'
 						),
 						{},

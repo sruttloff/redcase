@@ -1,10 +1,7 @@
 
-require_relative '../../lib/rtf'
+require_relative '../../vendor/rtf'
 
 class Rtf_Exporter
-
-	unloadable
-
 	include RTF
 
 	@@cStyles = {}
@@ -25,7 +22,7 @@ class Rtf_Exporter
 	end
 
 	def self.getTestCases(suite_id, project)
-		issues = Issue.where({ project_id: project.id }).collect { |i| i.id }
+		issues = Issue.visible(User.current).where({ project_id: project.id }).collect { |i| i.id }
 		test_cases = TestCase.where({ issue_id: issues })
 		if suite_id >= 0
 			test_cases = test_cases.select { |tc|
@@ -38,14 +35,14 @@ class Rtf_Exporter
 	def self.writeTitle(document, project_name, suite_id)
 		document.paragraph(@@pStyles['HEADER']) do |p|
 			p.apply(@@cStyles['HEADER']) do |s|
-				s << 'Test specification for'
+				s << RedcaseTranslation.text('label_specification_for')
 			end
 		end
 		document.paragraph(@@pStyles['HEADER']) do |p|
 			p.apply(@@cStyles['HEADER']) do |s|
 				s << project_name
 				if suite_id >= 0
-						 s << " - #{ExecutionSuite.find_by(id: suite_id).name}"
+						 s << " - #{RedcaseTranslation.suite_label(ExecutionSuite.find(suite_id))}"
 					end
 			end
 		end
@@ -67,32 +64,32 @@ class Rtf_Exporter
 					when 0
 						test_case = test_cases[i / 5]
 						r[0].apply(@@cStyles['CELL']) { |cell|
-							cell << ' ID '
+							cell << RedcaseTranslation.text('label_id') + ' '
 							cell << test_case.issue.id
 						}
 						r[1].apply(@@cStyles['CELL']) { |cell|
-							cell << ' Title: '
+							cell << RedcaseTranslation.text('label_title') + ': '
 						}
 						r[1] << test_case.issue.subject
 					when 1
 						r[0].apply(@@cStyles['CELL']) { |cell|
-							cell << ' Description:'
+							cell << RedcaseTranslation.text('label_description') + ':'
 							2.times { cell.line_break }
 						}
 						count = 0
-						test_case.issue.description.each_line { |line|
+						test_case.issue.description.to_s.each_line { |line|
 							count += 1
 							r[0] << line
 							r[0].line_break
 						}
 					when 2
 						r[0].apply(@@cStyles['CELL']) { |cell|
-							cell << ' Priority: '
+							cell << RedcaseTranslation.text('label_priority') + ': '
 						}
 						r[0] << test_case.issue.priority.name
 					when 3
 						r[0].apply(@@cStyles['CELL']) { |cell|
-							cell << ' Created by: '
+							cell << RedcaseTranslation.text('label_author') + ': '
 						}
 						r[0] << test_case.issue.author.name
 					when 4

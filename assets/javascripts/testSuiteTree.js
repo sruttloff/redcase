@@ -20,7 +20,7 @@ Redcase.TestSuiteTree.IsDraggable = function (nodes) {
 	var i;
 	//Make sure the user can't drag the root node, "default" nodes, the "unsorted" node, and disabled nodes
 	for (i = 0; i < nodes.length; i++) {
-		if ((nodes[i].parents.length < 2) || (nodes[i].type === 'default') || (nodes[i].text === '.Unsorted') || (nodes[i].state.disabled === true)) {
+		if ((nodes[i].parents.length < 2) || (nodes[i].type === 'default') || (nodes[i].type === 'suite' && nodes[i].original.draggable === false) || (nodes[i].state.disabled === true)) {
 			return false;
 		}
 	}
@@ -40,7 +40,7 @@ Redcase.TestSuiteTree.MoveTestCase = function (new_node, org_node, new_instance,
 		error : function () {
 			new_instance.delete_node(new_node);
 		},
-		errorMessage : "Test case '" + org_node.text + "' can't be moved"
+		errorMessage : Redcase.t('move_case_failed', {name: org_node.text})
 	});
 	Redcase.apiCall(apiParms);
 }
@@ -58,7 +58,7 @@ Redcase.TestSuiteTree.MoveTestSuite = function (new_node, org_node, new_instance
 		error : function () {
 			new_instance.delete_node(new_node);
 		},
-		errorMessage : "Test suite '" + org_node.text + "' can't be moved"
+		errorMessage : Redcase.t('move_test_suite_failed', {name: org_node.text})
 	})
 	Redcase.apiCall(apiParms);
 }
@@ -112,7 +112,7 @@ Redcase.TestSuiteTree.getSelectionType = function (tree) {
 				}
 			}
 		}
-		if (selection[i].parents.length === 1 || selection[i].text === '.Obsolete' || selection[i].text === '.Unsorted') {
+		if (selection[i].parents.length === 1 || (selection[i].type === 'suite' && selection[i].original.editable === false)) {
 			selectionType = selection.length === 1 ? 3 : 4;
 			break;
 		}
@@ -127,7 +127,7 @@ Redcase.TestSuiteTree.contextCopyTo = function(params) {
 
 	jQuery2.extend(apiParms, Redcase.methods.testCase.actions.copy(node.original.issue_id), {
 		params : {'dest_project' : params.item.id},
-		errorMessage : "Can't copy '" + node.text + "'"
+		errorMessage : Redcase.t('copy_case_failed', {name: node.text})
 	});
 	Redcase.apiCall(apiParms);
 }
@@ -147,32 +147,32 @@ Redcase.TestSuiteTree.prepareContextItems = function () {
 
 	Redcase.TestSuiteTree.caseItems = {
 		viewCase : {
-			'label' : 'View',
+			'label' : Redcase.t('view'),
 			'action' : Redcase.TestSuiteTree.viewCase
 		},
 		copyCase : {
-			'label' : 'Copy to',
+			'label' : Redcase.t('copy_to'),
 			submenu : copyItems
 		}
 	}
 
 	Redcase.TestSuiteTree.specialSuiteItems = {
 		addSuite : {
-			'label' : 'Add suite',
+			'label' : Redcase.t('add_suite'),
 			'action' : Redcase.TestSuiteTree.addSuite
 		}
 	}
 
 	Redcase.TestSuiteTree.suiteItems = {
 		renameSuite : {
-			'label' : 'Rename',
+			'label' : Redcase.t('rename_suite'),
 			'action' : Redcase.TestSuiteTree.renameSuite
 		}
 	}
 
 	Redcase.TestSuiteTree.commonItems = {
 		deleteItem : {
-			'label' : 'Delete',
+			'label' : Redcase.t('delete'),
 			'action' : Redcase.TestSuiteTree.deleteItem
 		}
 	}
@@ -191,20 +191,20 @@ Redcase.TestSuiteTree.deleteCase = function (node) {
 			var NewID = Redcase.TestSuiteTree.tree.create_node(Redcase.TestSuiteTree.tree.get_node('.Obsolete'), org);		
 			console.log('NewID = ' + NewID);
 		},
-		errorMessage : "Test case '" + node.text + "' can't be deleted"
+		errorMessage : Redcase.t('delete_case_failed', {name: node.text})
 	});
 	Redcase.apiCall(apiParms);
 }
 
 Redcase.TestSuiteTree.deleteSuite = function (node) {
-	if ((node.parents.length > 1) && (node.text !== '.Unsorted') && (node.text !== '.Obsolete')) {
+	if ((node.parents.length > 1) && node.original.editable !== false) {
 		
 		var apiParms = {};
 		jQuery2.extend(apiParms, Redcase.methods.testSuite.actions.destroy(node.original.suite_id),{
 			success : function () {
 				Redcase.TestSuiteTree.tree.delete_node(node);
 			},
-			errorMessage : "Execution suite '" + node.text + "' can't be deleted"
+			errorMessage : Redcase.t('delete_test_suite_failed', {name: node.text})
 		})
 		
 		Redcase.apiCall(apiParms);
@@ -234,11 +234,12 @@ Redcase.TestSuiteTree.addSuite = function (params) {
 	node = Redcase.TestSuiteTree.tree.get_node(params.reference);
 
 	jQuery('#redcase-dialog').dialog({
-		title : 'New test suite name',
+		title : Redcase.t('new_test_suite'),
 		modal : true,
+		closeText : Redcase.t('close'),
 		resizable : false,
 		buttons : {
-			'OK' : function () {
+			[Redcase.t('ok')] : function () {
 				var 
 					name = jQuery('#redcase-dialog-value').val(),
 					apiParms = {};
@@ -250,7 +251,7 @@ Redcase.TestSuiteTree.addSuite = function (params) {
 					success : function (newNode) {
 						Redcase.TestSuiteTree.tree.create_node(node, newNode);
 					},
-					errorMessage : "Test suite '" + name + "' can't be created",
+					errorMessage : Redcase.t('create_test_suite_failed', {name: name}),
 					complete : function () {
 						jQuery('#redcase-dialog').dialog('close');
 					}
@@ -266,11 +267,12 @@ Redcase.TestSuiteTree.renameSuite = function (params) {
 	node = Redcase.TestSuiteTree.tree.get_node(params.reference);
 
 	jQuery('#redcase-dialog').dialog({
-		title : 'Rename test suite',
+		title : Redcase.t('rename_test_suite'),
 		modal : true,
+		closeText : Redcase.t('close'),
 		resizable : false,
 		buttons : {
-			'OK' : function () {
+			[Redcase.t('ok')] : function () {
 				var 
 					name = jQuery('#redcase-dialog-value').val(),
 					apiParms = {};
@@ -279,7 +281,7 @@ Redcase.TestSuiteTree.renameSuite = function (params) {
 					success : function () {
 						Redcase.TestSuiteTree.tree.set_text(node, name);
 					},
-					errorMessage : "Can't rename '" + node.text + "'",
+					errorMessage : Redcase.t('rename_test_suite_failed', {name: node.text}),
 					complete : function () {
 						jQuery('#redcase-dialog').dialog('close');
 					}
@@ -347,6 +349,8 @@ Redcase.TestSuiteTree.build = function (params) {
 	Redcase.TestSuiteTree.tree = jQuery2('#management_test_suite_tree_id').jstree({
 			// Core config
 			'core' : {
+				'force_text' : true,
+				'strings' : {'Loading ...': Redcase.t('loading')},
 				'check_callback' : Redcase.TestSuiteTree.CheckCallback,
 				//'data' : [params.root]
 				'data' : {

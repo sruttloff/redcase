@@ -5,17 +5,17 @@
 		<tr>
 			<td>
 				<h3 id="execution-settings-suite">
-					<%= l('label_execution_suite') %>:
+					<%= l('redcase.label_execution_suite') %>:
 				</h3>
 			</td>
 			<td>
 				<h3 id="execution-settings-suite">
-					<!-- f.select :id, lists2.collect { |e| [ e.name, e.id ] } -->
+					<!-- f.select :id, lists2.collect { |e| [ redcase_suite_label(e), e.id ] } -->
 					<%=
 						select_tag(
 							'list2_id',
 							options_for_select(
-								lists2.collect { |e| [ e.name, e.id ] }
+								lists2.collect { |e| [ redcase_suite_label(e), e.id ] }
 							)
 						)
 					%>
@@ -25,7 +25,7 @@
 		<tr>
 			<td>
 				<h3 id="execution-settings-version">
-					<%= l('label_version') %>:
+					<%= l('redcase.label_version') %>:
 				</h3>
 			</td>
 			<td>
@@ -53,7 +53,7 @@
 		<tr>
 			<td>
 				<h3 id="execution-settings-environment">
-					<%= l('label_environment') %>:
+					<%= l('redcase.label_environment') %>:
 				</h3>
 			</td>
 			<td>

@@ -1,7 +1,5 @@
 
 class ExecutionSuite < ActiveRecord::Base
-
-	unloadable
 	acts_as_tree :order => 'name'
 	has_and_belongs_to_many(
 		:test_cases,
@@ -23,7 +21,7 @@ class ExecutionSuite < ActiveRecord::Base
 
 	def self.get_results(environment, version, suite_id, project_id)
 	    if environment && version
-			issues = Issue
+			issues = Issue.visible(User.current)
 				.where({ project_id: project_id })
 				.pluck(:id)
 			test_cases = TestCase.where({ issue_id: issues })
@@ -99,7 +97,7 @@ class ExecutionSuite < ActiveRecord::Base
 	def to_json(context, version = nil, environment = nil)
 		{
 			'suite_id'   => id,
-			'text'       => name,
+			'text'       => RedcaseTranslation.suite_label(self),
 			'id'         => id,
 			'expandable' => true,
 			'expanded'   => (children.count + test_cases.count) == 0,
@@ -107,7 +105,7 @@ class ExecutionSuite < ActiveRecord::Base
 			'editable'   => !parent.nil?,
 			'children'   => (
 				children.collect { |s| s.to_json(context, version, environment) } +
-				test_cases
+				test_cases.joins(:issue).merge(Issue.visible(User.current))
 					.sort_by { |x| x.issue.subject }
 					.collect { |tc| tc.to_json(context, version, environment) }
 			),

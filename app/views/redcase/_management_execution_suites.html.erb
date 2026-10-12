@@ -16,12 +16,12 @@
 	) do |f|
 %>
 	<h3>
-        <%= l('label_execution_suite') %>:
-		<%= f.select :id, @lists.collect { |e| [ e.name, e.id ] } %>
+        <%= l('redcase.label_execution_suite') %>:
+		<%= f.select :id, @lists.collect { |e| [redcase_suite_label(e), e.id, {'data-name' => e.name}] } %>
     </h3>
     <p>
         <%= f.text_field :name %>
-		<a href="#" id="btn_save_exec_suite">
+		<a href="#" id="btn_save_exec_suite" title="<%= l('redcase.label_save_execution_suite') %>" aria-label="<%= l('redcase.label_save_execution_suite') %>">
 			<%=
 				image_tag(
 					'save.png',
@@ -31,7 +31,7 @@
 				)
 			%>
 		</a>
-		<a href="#" id="btn_create_exec_suite">
+		<a href="#" id="btn_create_exec_suite" title="<%= l('redcase.label_add_execution_suite') %>" aria-label="<%= l('redcase.label_add_execution_suite') %>">
 			<%=
 				image_tag(
 					'add.jpg',
@@ -42,7 +42,7 @@
 			%>
 		</a>
 <% if @lists.length > 1 %>
-		<a href="#" id="btn_destroy_exec_suite">
+		<a href="#" id="btn_destroy_exec_suite" title="<%= l('redcase.label_delete_execution_suite') %>" aria-label="<%= l('redcase.label_delete_execution_suite') %>">
 			<%=
 				image_tag(
 					'delete.jpg',

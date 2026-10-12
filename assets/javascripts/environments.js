@@ -21,9 +21,7 @@ var RedcaseEnvironments = function($) {
 					bind();
 				},
 				errorMessage: (
-					"Environment '"
-					+ $('#execution_environment_id option:selected').text()
-					+ "' can't be loaded"
+					Redcase.t('load_environment_failed', {name: $('#execution_environment_id option:selected').text()})
 				),
 				complete: function() {
 					Redcase.full();
@@ -43,9 +41,7 @@ var RedcaseEnvironments = function($) {
 					$('#execution_environment_id').change();
 				},
 				errorMessage: (
-					"Environment '"
-					+ $('#execution_environment_id option:selected').text()
-					+ "' can't be deleted"
+					Redcase.t('delete_environment_failed', {name: $('#execution_environment_id option:selected').text()})
 				),
 				complete: function() {
 					Redcase.full();
@@ -74,7 +70,7 @@ var RedcaseEnvironments = function($) {
 					);
 					$('#execution_environment_id').val(data.id);
 				},
-				errorMessage: ("Environment '" + name + "' can't be created"),
+				errorMessage: (Redcase.t('create_environment_failed', {name: name})),
 				complete: function() {
 					Redcase.full();
 				}
@@ -100,7 +96,7 @@ var RedcaseEnvironments = function($) {
 				success: function(data, textStatus, request) {
 					$('#execution_environment_id option:selected').text(name);
 				},
-				errorMessage: ("Environment '" + name + "' can't be renamed"),
+				errorMessage: (Redcase.t('rename_environment_failed', {name: name})),
 				complete: function() {
 					Redcase.full();
 				}

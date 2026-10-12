@@ -7,7 +7,7 @@
 			<div id='execution_test_cases_tree_id' class="redcase_tree"/>
 		</td>
 		<td id="execution_test_case_info_id" class="last-cell">
-			<h3><%= l('label_execution_info') %></h3>
+			<h3><%= l('redcase.label_execution_info') %></h3>
 			<div id="test-case-edit" style="display: none">
 				<div id="exec_descr_id"
 				     class="issue status-2 priority-2 created-by-me details">
@@ -18,12 +18,12 @@
 						</div>
 					</h2>
 					<div style="font-weight: bold">
-						<%= l('label_description') %>:
+						<%= l('redcase.label_description') %>:
 					</div>
 					<div id="test-case-desc" class="wiki"></div>
 					<div id="test-case-attach" class="wiki"></div>
 				</div>
-				<%= l('label_comment') %>:
+				<%= l('redcase.label_comment') %>:
 				<br/>
 				<%=
 					text_area_tag(
@@ -34,21 +34,21 @@
 					)
 				%>
 				<br/>
-				<%= l('label_result') %>:
+				<%= l('redcase.label_result') %>:
 				<%=
 					select_tag(
 						'results',
 						options_for_select(
- 						ExecutionResult
- 							.order(order_number: :asc)
- 							.collect { |res| res.name }
+						ExecutionResult
+							.order(order_number: :asc)
+							.collect { |res| [redcase_result_label(res.name), res.name] }
 						)
 					)
 				%>
 				&nbsp;
 				<%=
 					submit_tag(
-						l(:label_button_save),
+						l('redcase.label_button_save'),
 						:onclick => 'Redcase.ExecutionTree.execute()'
 					)
 				%>
@@ -63,7 +63,7 @@
 		<td>
 			<fieldset class="tabular redcase-content" style="height: auto">
 				<legend class="redcase-header">
-					<%= l('label_history') %>
+					<%= l('redcase.label_history') %>
 				</legend>
 				<div id="all-results"></div>
 			</fieldset>

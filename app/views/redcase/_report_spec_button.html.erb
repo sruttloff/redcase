@@ -9,10 +9,11 @@
 %>
 <%=
 	link_to image_tag(
-		'test_spec.png',
+		'save.png',
 		:plugin => 'redcase',
-		:size => '180x36'
-	), {
+		:alt => '',
+		:size => '20x20'
+	) + ' ' + l('redcase.label_export_rtf'), {
 		:controller => 'redcase/export',
 		:action => :index,
 		:export_to => :rtf,

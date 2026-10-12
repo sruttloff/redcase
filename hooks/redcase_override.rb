@@ -1,23 +1,21 @@
 
 # Callback methods to subscribe on Redmine events
 
-require File.expand_path("../../app/helpers/redcase_helper", __FILE__)
-
 module RedcaseOverride
 
   class RO < Redmine::Hook::ViewListener
 
-    include RedcaseHelper
-
    	def controller_issues_edit_after_save(context = { })
 		# context[:journal] may be a Journal or an id; normalize to id
 		jid = context[:journal].respond_to?(:id) ? context[:journal].id : context[:journal]
-		journal_details = JournalDetail.find_by(journal_id: jid)
+		journal_details = JournalDetail.find_by(journal_id: jid, prop_key: 'tracker_id')
 		return if journal_details.nil?
+		tracker = Tracker.find_by(name: 'Test case')
+		return unless tracker
 		if journal_details.prop_key == 'tracker_id'
-			if journal_details.value == Tracker.find_by(name: 'Test case').id.to_s
+			if journal_details.value == tracker.id.to_s
 				controller_issues_new_after_save(context)
-			elsif journal_details.old_value == Tracker.find_by(name: 'Test case').id.to_s
+			elsif journal_details.old_value == tracker.id.to_s
 				tc = TestCase.find_by(issue_id: context[:issue].id)
 				tc.destroy if !tc.nil?
 			end
@@ -34,18 +32,17 @@ module RedcaseOverride
     end
 
     def view_projects_roadmap_version_bottom(context = { })
-      test_cases = ExecutionJournal.where({version_id: context[:version]}).map { |x| x.test_case }.uniq
-      issues = Issue.where(fixed_version_id: context[:version].id).collect { |x| x.id }
+      issues = Issue.visible(User.current).where(fixed_version_id: context[:version].id).collect { |x| x.id }
       test_cases = TestCase.where({issue_id: issues})
       results = ExecutionResult.all
-      txt = "<span style='color: red'>Total test cases:</span> <b>" + test_cases.size.to_s + "</b>"
+      txt = "<span style='color: red'>#{ERB::Util.html_escape(RedcaseTranslation.text('label_total_test_cases'))}:</span> <b>" + test_cases.size.to_s + "</b>"
       for r in results do
         count = 0
         for t in test_cases do
           journals = ExecutionJournal.where({test_case_id: t.id, result_id: r.id})
           count = count + journals.size if !journals.nil?
         end
-        txt = txt + " [" + r.name + "=" + count.to_s + "]"
+        txt = txt + " [" + ERB::Util.html_escape(RedcaseTranslation.result_label(r.name)) + "=" + count.to_s + "]"
       end
       txt = txt + "<br/>"
     end

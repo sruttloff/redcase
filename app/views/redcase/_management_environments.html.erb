@@ -16,12 +16,12 @@
 	) do |f|
 %>
 	<h3>
-        <%= l('label_environment') %>:
+        <%= l('redcase.label_environment') %>:
 		<%= f.select :id, environments.collect { |e| [ e.name, e.id ] } %>
     </h3>
     <p>
         <%= f.text_field :name %>
-		<a href="#" id="btn_save_environment">
+		<a href="#" id="btn_save_environment" title="<%= l('redcase.label_save_environment') %>" aria-label="<%= l('redcase.label_save_environment') %>">
 			<%=
 				image_tag(
 					'save.png',
@@ -31,7 +31,7 @@
 				)
 			%>
 		</a>
-		<a href="#" id="btn_create_environment">
+		<a href="#" id="btn_create_environment" title="<%= l('redcase.label_add_environment') %>" aria-label="<%= l('redcase.label_add_environment') %>">
 			<%=
 				image_tag(
 					'add.jpg',
@@ -42,7 +42,7 @@
 			%>
 		</a>
 <% if environments.length > 1 %>
-		<a href="#" id="btn_destroy_environment">
+		<a href="#" id="btn_destroy_environment" title="<%= l('redcase.label_delete_environment') %>" aria-label="<%= l('redcase.label_delete_environment') %>">
 			<%=
 				image_tag(
 					'delete.jpg',

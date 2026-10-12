@@ -1,11 +1,9 @@
 
-class Redcase::GraphController < ApplicationController
-
-	unloadable
+class Redcase::GraphController < Redcase::BaseController
 	before_action :find_project, :authorize
 
 	def show
-		environment = ExecutionEnvironment.find_by(id: params[:environment_id])
+		environment = @project.execution_environments.find_by(id: params[:environment_id])
 		# TODO: This is not supposed to happen in general, only if this
 		#       controller method was called at the wrong time. Unfortunately,
 		#       it takes place currently, so below is a workaround to not throw
@@ -13,11 +11,12 @@ class Redcase::GraphController < ApplicationController
 		#       anyway, but we need to polish the API and return a JSON data
 		#       with an error so the client could handle it properly.
 		if !environment
-			render :json => {}
+			render :json => []
 			return
 		end
-		version = Version.find(params[:version_id])
-		root_execution_suite = ExecutionSuite.find_by(id: params[:suite_id])
+		version = @project.versions.find_by(id: params[:version_id])
+		return render :json => [] unless version
+		root_execution_suite = project_suite(ExecutionSuite, params[:suite_id]) if params[:suite_id].to_i >= 0
 		graph_data = TestGraph.get_data(
 			version.id,
 			environment.id,
@@ -53,7 +52,7 @@ class Redcase::GraphController < ApplicationController
 				:value => count,
 				:color => COLORS[result_name],
 				:highlight => HIGHLIGHT_COLORS[result_name],
-				:label => result_name
+				:label => RedcaseTranslation.result_label(result_name)
 			}
 			results << result
 		}

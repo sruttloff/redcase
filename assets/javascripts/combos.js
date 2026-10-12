@@ -21,7 +21,7 @@ var RedcaseCombos = function($) {
 					rebind();
 					self.refresh();
 				},
-				errorMessage: 'An unknown error ocurred'
+				errorMessage: Redcase.t('unknown_error')
 			}
 		);
 		Redcase.apiCall(apiParams);
@@ -40,7 +40,7 @@ var RedcaseCombos = function($) {
 				success: function(data, textStatus, request) {
 					$('#download_button_id').html(data);
 				},
-				errorMessage : 'An unknown error ocurred'
+				errorMessage : Redcase.t('unknown_error')
 			}
 		);
 		Redcase.apiCall(apiParams);
@@ -57,22 +57,22 @@ var RedcaseCombos = function($) {
 				success: function(data, textStatus, request) {
 					$('#report_results_table_id').html(data);
 				},
-				errorMessage: "Couldn't load results"
+				errorMessage: Redcase.t('load_results_failed')
 			}
 		);
 		Redcase.apiCall(apiParams);
 	};
 
 	this.refreshFilter = function() {
-		var filtered = $('#filter_id_ option:selected').text().trim();
+		var filtered = $('#filter_id_').val();
 		for (var i = 0; i < Redcase.result_names.length; i++) {
 			var name = Redcase.result_names[i];
 			$.each($('[name="' + name + '"]'), function(index, value) {
 				$(value).css(
 					'display', (
-						(filtered == 'All results')
+						(filtered == 'all')
 						|| (filtered == name)
-						|| ((filtered == 'Not passed') && (name != 'Passed'))
+						|| ((filtered == 'not_passed') && (name != 'Passed'))
 					)
 						? 'table-row'
 						: 'none'

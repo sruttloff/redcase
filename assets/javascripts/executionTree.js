@@ -14,15 +14,16 @@ Redcase.ExecutionTree.IsDraggable = function() {
 }
 
 Redcase.ExecutionTree.getHistory = function(data, node) {
+	var escape = function(value) {
+		return jQuery2('<span>').text(value == null ? '' : String(value)).html();
+	};
 	var
 	i,
 	notFirst,
 	color,
 	unique = {},
 	txt = "<table class='redcase-row' width='100%'>";
-	txt += "<tr style='font-weight: bold; background-color: #eeeeee'><td>date</td><td>result</td><td>comments</td><td>executor</td><td>environment</td><td>version</td><td>&nbsp;</td></tr>";
-	console.log(JSON.stringify(node));
-	console.log(Redcase.ExecutionTree.currentIssue);
+	txt += "<tr style='font-weight: bold; background-color: #eeeeee'><td>" + escape(Redcase.labels.label_date) + "</td><td>" + escape(Redcase.labels.label_result) + "</td><td>" + escape(Redcase.labels.label_comments) + "</td><td>" + escape(Redcase.labels.label_executor) + "</td><td>" + escape(Redcase.labels.label_environment) + "</td><td>" + escape(Redcase.labels.label_version) + "</td><td>&nbsp;</td></tr>";
 	for (i = 0; i < data.length; i++) {
 		
 		switch (data[i].result) {
@@ -43,19 +44,21 @@ Redcase.ExecutionTree.getHistory = function(data, node) {
 		}
 		notFirst = (unique[data[i].environment + data[i].version]);
 		txt += "<tr" + (notFirst ? " style='background-color: " + color + "'" : " style='background-color: " + color + "; font-weight: bold'") + ">";
-		txt += "<td>" + data[i].created_on + "</td>";
-		txt += "<td>" + data[i].result + "</td>";
-		txt += "<td>" + data[i].comment + "</td>";
-		txt += "<td>" + data[i].executor + "</td>";
-		txt += "<td>" + data[i].environment + "</td>";
-		txt += "<td>" + data[i].version + "</td>";
+		txt += "<td>" + escape(data[i].created_on) + "</td>";
+		txt += "<td>" + escape(Redcase.resultLabel(data[i].result)) + "</td>";
+		txt += "<td>" + escape(data[i].comment) + "</td>";
+		txt += "<td>" + escape(data[i].executor) + "</td>";
+		txt += "<td>" + escape(data[i].environment) + "</td>";
+		txt += "<td>" + escape(data[i].version) + "</td>";
 		if(data[i].result != "Passed") {
-			argument = {title: typeof node.text === 'string' ? node.text : node.text(),
+			var argument = {title: typeof node.text === 'string' ? node.text : node.text(),
 						description: data[i].comment,
 						environment: data[i].environment,
 						version: data[i].version
 						}
-			txt += "<td>" + '<button onclick="javascript:createIssue(\''+argument.title+'\',\''+argument.description+'\',\'' + argument.environment + '\',\'' + argument.version + '\')">Create Issue</button>' + "</td>";
+			txt += '<td>' + jQuery2('<button>', {
+				type: 'button', 'class': 'redcase-create-issue', text: Redcase.t('create_issue')
+			}).attr('data-issue', JSON.stringify(argument)).prop('outerHTML') + '</td>';
 		}
 		else {
 			txt +="<td>&nbsp;</td>"
@@ -69,6 +72,13 @@ Redcase.ExecutionTree.getHistory = function(data, node) {
 	txt += "</table>";
 	return txt;
 }
+
+jQuery2(function($) {
+	$('#all-results').on('click', '.redcase-create-issue', function() {
+		var data = JSON.parse($(this).attr('data-issue'));
+		createIssue(data.title, data.description, data.environment, data.version);
+	});
+});
 
 function createIssue(title, description, environment, version) {
 	var apiParams = jQuery2.extend(
@@ -84,9 +94,9 @@ function createIssue(title, description, environment, version) {
 			success: function(response) {
 				Redcase.Combos.refresh();
 				console.log(JSON.stringify(response));
-				alert("Created new issue " + response.issue_id);
+				alert(Redcase.t('issue_created', {id: response.issue_id}));
 			},
-			errorMessage: 'Execution failed'
+			errorMessage: Redcase.t('issue_failed')
 		}
 	);
 	Redcase.apiCall(apiParams);
@@ -117,7 +127,7 @@ Redcase.ExecutionTree.selectionChange = function (event, params) {
 				jQuery2('#exec_descr_id').toggle(data.desc !== undefined);
 				desc = jQuery2('#test-case-desc');
 				subj = jQuery2('#test-case-subj');
-				subj.html('<a href="/issues/' + data.issue_id + '">' + data.text + '</a>');
+				subj.empty().append(jQuery2('<a>').attr('href', '../../issues/' + data.issue_id).text(data.text));
 				desc.html(data.desc);
 				edit.show();
 				results = jQuery2('#results');
@@ -136,7 +146,7 @@ Redcase.ExecutionTree.selectionChange = function (event, params) {
 							jQuery2('#all-results').html(txt);
 						}
 					},
-					errorMessage: "Unable to get execution results"
+					errorMessage: Redcase.t('load_results_failed')
 				});
 				Redcase.apiCall(apiParms);
 				apiParms = {};
@@ -150,16 +160,16 @@ Redcase.ExecutionTree.selectionChange = function (event, params) {
 						if (data.length > 0) {
 							txt = "";
 							for (i = 0; i < data.length; i++) {
-								txt += "<a href='" + data[i].url + "' target='_blank'>" + "<img src=" + '"' + "/images/attachment.png" + '"' + "></img>" + data[i].name + "</a><br/>";
+								txt += jQuery2('<a>').attr({href: data[i].url, target: '_blank'}).text(data[i].name).prop('outerHTML') + '<br/>';
 							}
 							jQuery2('#test-case-attach').html(txt);
 						}
 					},
-					errorMessage: "Getting attachments failed"
+					errorMessage: Redcase.t('load_attachments_failed')
 				});
 				Redcase.apiCall(apiParms);
 			},
-			errorMessage: "Information about test case '" + node.text + "' can't be obtained"
+			errorMessage: Redcase.t('load_case_failed', {name: node.text})
 		});
 
 		Redcase.apiCall(apiParms);
@@ -171,6 +181,8 @@ Redcase.ExecutionTree.build = function (params) {
 		jQuery2('#execution_test_cases_tree_id').jstree({
 			// Core config
 			'core' : {
+				'force_text' : true,
+				'strings' : {'Loading ...': Redcase.t('loading')},
 				'check_callback' : Redcase.ExecutionTree.CheckCallback,
 				'data' : {
 					'type' : 'GET',
@@ -252,7 +264,7 @@ Redcase.ExecutionTree.execute = function() {
 				//       issue with updates.
 				Redcase.Combos.refresh();
 			},
-			errorMessage: 'Execution failed'
+			errorMessage: Redcase.t('execution_failed')
 		}
 	);
 	Redcase.apiCall(apiParams);

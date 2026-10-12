@@ -1,7 +1,5 @@
 
-class Redcase::TestsuitesController < ApplicationController
-
-	unloadable
+class Redcase::TestsuitesController < Redcase::BaseController
 	before_action :find_project, :authorize
 
 	def index
@@ -12,18 +10,17 @@ class Redcase::TestsuitesController < ApplicationController
 	end
 
 	def create
-		created = TestSuite.create(
+		parent = project_suite(TestSuite, params[:parent_id])
+		created = TestSuite.create!(
 			:name => params[:name],
-			:parent_id => params[:parent_id]
+			:parent => parent
 		)
 		render :json => created.to_json(view_context)
 	end
 
 	def update
-		testSuite = TestSuite.find(params[:id])
-		testSuite.parent = TestSuite.find(
-			params[:parent_id]
-		) unless params[:parent_id].nil?
+		testSuite = project_suite(TestSuite, params[:id])
+		move_suite(testSuite, params[:parent_id]) unless params[:parent_id].nil?
 		testSuite.name = params[:new_name] unless (params[:new_name].nil?)
 		testSuite.save
 		# TODO: Properly handle if failed.
@@ -31,7 +28,9 @@ class Redcase::TestsuitesController < ApplicationController
 	end
 
 	def destroy
-		TestSuite.destroy(params[:id])
+		suite = project_suite(TestSuite, params[:id])
+		raise ActiveRecord::RecordNotFound if suite.parent.nil? || ['.Unsorted', '.Obsolete'].include?(suite.name)
+		suite.destroy!
 		# TODO: Properly handle if failed.
 		render :json => { :success => true }
 	end

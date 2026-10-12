@@ -1,11 +1,8 @@
 
 require 'csv'
 class Excel_Exporter
-
-	unloadable
-
 	def self.exportTestResults(project_id, suite_id, version_id, environment_id)
-		issues = Issue
+		issues = Issue.visible(User.current)
 			.where({ project_id: project_id })
 			.order(id: :asc)
 			.pluck(:id)
@@ -14,11 +11,11 @@ class Excel_Exporter
 		environments = ExecutionEnvironment.find(environment_id)
 		rows = []
 		rows << [
-			'ID',
-			'Suite',
-			'Title',
+			RedcaseTranslation.text('label_id'),
+			RedcaseTranslation.text('label_test_suite'),
+			RedcaseTranslation.text('label_title'),
 			"#{versions.name}(#{environments.name})",
-			'Comment'
+			RedcaseTranslation.text('label_comment')
 		]
 		test_cases = test_cases.sort { |a, b|
 			(a.test_suite.name <=> b.test_suite.name)
@@ -27,13 +24,13 @@ class Excel_Exporter
 			if (suite_id.to_i < 0) || test_case.in_suite?(suite_id.to_i, project_id)
 				row = []
 				row << "##{test_case.issue.id}"
-				row << test_case.test_suite.name
+				row << RedcaseTranslation.suite_label(test_case.test_suite)
 				row << "#{test_case.issue.subject}"
 				found = ExecutionJournal
 					.where(test_case_id: test_case.id, environment_id: environments.id, version_id: versions.id)
 					.order(created_on: :desc)
 					.first
-				row << (!found ? 'Not Executed' : found.result.name)
+				row << RedcaseTranslation.result_label(!found ? 'Not Executed' : found.result.name)
 				if found.present?
 					if found.comment.present?
 						row << found.comment

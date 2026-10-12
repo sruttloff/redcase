@@ -1,7 +1,7 @@
 <table>
 	<tr>
 		<td>
-			<%= l('label_version') %>:
+			<%= l('redcase.label_version') %>:
 		</td>
 		<td>
 			<%=
@@ -26,17 +26,15 @@
 	</tr>
 	<tr>
 		<td>
-			<%= l('label_execution_suite') %>:
+			<%= l('redcase.label_execution_suite') %>:
 		</td>
 		<td>
 			<%=
 				select_tag(
 					:suite,
-					options_for_select([['All', '-1']]) +
-					options_from_collection_for_select(
-						ExecutionSuite.where({ project_id: @project.id }),
-						'id',
-						'name',
+					options_for_select([[l('redcase.label_all'), '-1']]) +
+					options_for_select(
+						ExecutionSuite.where(project_id: @project.id).map { |suite| [redcase_suite_label(suite), suite.id] },
 						get_id_or_default(@root_execution_suite, -1)
 					),
 					:style => 'width: 225px',
@@ -47,7 +45,7 @@
 	</tr>
 	<tr>
 		<td>
-			<%= l('label_environment') %>:
+			<%= l('redcase.label_environment') %>:
 		</td>
 		<td>
 			<%=

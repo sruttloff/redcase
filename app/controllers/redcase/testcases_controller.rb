@@ -1,12 +1,10 @@
 
-class Redcase::TestcasesController < ApplicationController
-
-	unloadable
+class Redcase::TestcasesController < Redcase::BaseController
 	before_action :find_project, :authorize
 
 	def index
 		# TODO: What if there is none?
-		test_case = TestCase.where({ issue_id: params[:object_id] }).first
+		test_case = project_test_cases.find_by!(issue_id: params[:object_id])
 		render :json => test_case.to_json(view_context)
 	end
 
@@ -16,46 +14,37 @@ class Redcase::TestcasesController < ApplicationController
 			raise ::Unauthorized
 		end
 		# TODO: What if there is none?
-		test_case = TestCase.where({ issue_id: params[:id] }).first
+		test_case = project_test_cases.find_by!(issue_id: params[:id])
 		test_case.copy_to(destination_project)
 		render :json => { :success => true }
 	end
 
 	def update
+		permission = params[:result].present? ? :execute_test_cases : :edit_test_cases
+		return render_403 unless User.current.allowed_to?(permission, @project)
+		if params[:result].present?
+			return execute(project_test_cases.find_by!(issue_id: params[:id]))
+		end
 		# TODO: What if there is none?
-		test_case = TestCase.where({ issue_id: params[:id] }).first
-		if test_case.nil?
-			success = false
-		else
-			unless params[:parent_id].nil?
-				test_case.test_suite = TestSuite.find(params[:parent_id])
-			end
-			unless (params[:source_exec_id].nil? || params[:dest_exec_id].nil?)
-				success = test_case.change_execution_suite?(
-					params[:source_exec_id], params[:dest_exec_id]
-				)
-			end
-			unless (!params[:source_exec_id].nil? || params[:dest_exec_id].nil?)
-				success = test_case.add_to_execution_suite?(
-					params[:dest_exec_id]
-				)
-			end
-			unless params[:remove_from_exec_id].nil?
-				test_case.remove_from_execution_suite(
-					params[:remove_from_exec_id]
-				)
-			end
-			unless params[:obsolesce].nil?
-				test_case.test_suite = TestSuite.get_obsolete(@project)
-			end
+		test_case = project_test_cases.find_by!(issue_id: params[:id])
+		success = true
+		[:source_exec_id, :dest_exec_id, :remove_from_exec_id].each do |key|
+			project_suite(ExecutionSuite, params[key]) if params[key].present?
 		end
-
-		if params[:result].nil?
-			test_case.save
-			render :json => {:success => success}
-		else
-			execute(test_case)
+		if params[:parent_id].present?
+			test_case.test_suite = project_suite(TestSuite, params[:parent_id])
 		end
+		if params[:source_exec_id].present? && params[:dest_exec_id].present?
+			success = test_case.change_execution_suite?(params[:source_exec_id], params[:dest_exec_id])
+		elsif params[:dest_exec_id].present?
+			success = test_case.add_to_execution_suite?(params[:dest_exec_id])
+		end
+		if params[:remove_from_exec_id].present?
+			test_case.remove_from_execution_suite(params[:remove_from_exec_id])
+		end
+		test_case.test_suite = TestSuite.get_obsolete(@project) if params[:obsolesce].present?
+		test_case.save!
+		render :json => { :success => success }
 	end
 
 	private
@@ -66,11 +55,11 @@ class Redcase::TestcasesController < ApplicationController
 	end
 
 	def execute(test_case)
-		version = Version.find_by(name: params[:version], project_id: @project.id)
+		version = @project.versions.find_by!(name: params[:version])
 		comment = params[:comment].blank? ? nil : params[:comment]
-		result = ExecutionResult.find_by(name: params[:result])
-		environment = ExecutionEnvironment.find(params[:envs])
-		ExecutionJournal.create(
+		result = ExecutionResult.find_by!(name: params[:result])
+		environment = @project.execution_environments.find(params[:envs])
+		ExecutionJournal.create!(
 			version: version,
 			comment: comment,
 			test_case: test_case,

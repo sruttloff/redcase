@@ -1,7 +1,5 @@
 
 class TestCase < ActiveRecord::Base
-
-	unloadable
 	belongs_to :test_suite
 	belongs_to :issue
 	has_and_belongs_to_many(
@@ -22,18 +20,19 @@ class TestCase < ActiveRecord::Base
 				h
 			}
 		# Reassign fixed_versions by name, since names are unique per project.
-		if issue.fixed_version && (issue.fixed_version.project == project)
-			new_issue.fixed_version = self.versions.detect { |v|
+		if issue.fixed_version
+			new_issue.fixed_version = project.versions.detect { |v|
 				v.name == issue.fixed_version.name
 			}
 		end
 		# Reassign the category by name, since names are unique per project.
 		if issue.category
-			new_issue.category = self.issue_categories.detect { |c|
+			new_issue.category = project.issue_categories.detect { |c|
 				c.name == issue.category.name
 			}
 		end
-		new_issue.save
+		new_issue.save!
+		TestCase.move_unsorted([new_issue], project)
 	end
 
 	def self.maintenance(project)
@@ -92,27 +91,10 @@ class TestCase < ActiveRecord::Base
 	end
 
 	def in_suite?(suite_id, project_id)
-		# Is the test case directly in the suite?
-		included = execution_suites.any? { |es|
-			(es.id == suite_id) && (!es.project.nil? && (es.project.id == project_id))
-		}
-		if !included
-			# Apparently nested suites don't have a project so we don't filter
-			# by that here.
-			other_suites = execution_suites.select { |es| !es.parent.nil? }
-			while other_suites.any?
-				if other_suites.any? { |es| (es.parent.id == suite_id) }
-					included = true
-					break
-				else
-					other_suites
-						.collect! { |es| es.parent }
-						.select! { |es| !es.parent.nil? }
-					other_suites.compact!
-				end
-			end
+		execution_suites.any? do |suite|
+			suite.root.project_id == project_id.to_i &&
+				(suite.id == suite_id.to_i || suite.ancestors.any? { |parent| parent.id == suite_id.to_i })
 		end
-		included
 	end
 
 	# TODO: Move to view f.ex. using JBuilder
@@ -143,16 +125,16 @@ class TestCase < ActiveRecord::Base
 				:width        => '500',
 				:closable     => 'true',
 				:text         => (
-					"\"#{issue.subject}\"<br/>" + (
+					"\"#{ERB::Util.html_escape(issue.subject)}\"<br/>" + (
 						issue.description.nil? ? '' : (
-							"<br/><b>Description:</b><br/>#{textilized_description}"
+							"<br/><b>#{RedcaseTranslation.text('label_description')}:</b><br/>#{textilized_description}"
 						)
 					) +
-					"<br/><b>Priority:</b> #{issue.priority.name}" +
-					"<br/><b>Author:</b> #{issue.author.name}" +
-					"<br/><b>Created:</b> #{issue.created_on.strftime('%d.%m.%Y %H:%M')}"
+					"<br/><b>#{RedcaseTranslation.text('label_priority')}:</b> #{ERB::Util.html_escape(issue.priority.name)}" +
+					"<br/><b>#{RedcaseTranslation.text('label_author')}:</b> #{ERB::Util.html_escape(issue.author.name)}" +
+					"<br/><b>#{RedcaseTranslation.text('label_created_on')}:</b> #{issue.created_on.strftime('%d.%m.%Y %H:%M')}"
 				),
-				:title        => "Issue ##{issue.id}",
+				:title        => "#{RedcaseTranslation.text('label_test_case')} ##{issue.id}",
 				:dismissDelay => 30000
 			},
 			'type'      => 'case',
@@ -170,6 +152,7 @@ class TestCase < ActiveRecord::Base
 	def change_execution_suite?(source_id, dest_id)
 		destination_suite = ExecutionSuite.find(dest_id)
 		source_suite = ExecutionSuite.find(source_id)
+		return true if source_suite == destination_suite
 		if (source_suite.root == destination_suite.root) or (destination_suite.is_test_case_id_unique?(id))
 			destination_suite.test_cases << self
 			source_suite.test_cases.delete(self)
@@ -211,4 +194,3 @@ class TestCase < ActiveRecord::Base
 	end
 
 end
-

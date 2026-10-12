@@ -1,7 +1,5 @@
 
 class TestSuite < ActiveRecord::Base
-
-	unloadable
 	acts_as_tree :order => "name"
 	has_many :test_cases, :dependent => :destroy
 	belongs_to :project
@@ -34,7 +32,7 @@ class TestSuite < ActiveRecord::Base
 		if parent_id
 			kids = children.collect { |s|
 				s.to_json(context)
-			} + test_cases.sort_by { |x|
+			} + test_cases.joins(:issue).merge(Issue.visible(User.current)).sort_by { |x|
 				x.issue.subject
 			}.collect { |tc|
 				tc.to_json(context)
@@ -44,7 +42,7 @@ class TestSuite < ActiveRecord::Base
 				(x.name != '.Obsolete') && (x.name != '.Unsorted')
 			}.collect { |s|
 				s.to_json(context)
-			} + test_cases.sort_by { |x|
+			} + test_cases.joins(:issue).merge(Issue.visible(User.current)).sort_by { |x|
 				x.issue.subject
 			}.collect { |tc|
 				tc.to_json(context)
@@ -56,7 +54,7 @@ class TestSuite < ActiveRecord::Base
 		end
 		{
 			'suite_id'       => id,
-			'text'           => name,
+			'text'           => RedcaseTranslation.suite_label(self),
 			'id'             => ((name != '.Obsolete') && (name != '.Unsorted')) ? "suite_#{id}" : name,
 			'expandable'     => true,
 			'expanded'       => false,

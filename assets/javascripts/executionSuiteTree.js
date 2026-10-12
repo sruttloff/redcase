@@ -19,7 +19,7 @@ Redcase.ExecutionSuiteTree.updateList2 = function() {
 				Redcase.ExecutionTree.tree.refresh();
 			}
 		},
-		errorMessage : "Couldn't load execution list"
+		errorMessage : Redcase.t('load_execution_failed')
 	});
 	Redcase.apiCall(apiParms);		
 }
@@ -29,7 +29,7 @@ Redcase.ExecutionSuiteTree.saveExecSuiteClick = function(event) {
 		jQuery2('#list_id').val(),
 		jQuery2('#list_name').val(),
 		function (data, textStatus, request) {
-			jQuery2('#list_id option:selected').text(jQuery2('#list_name').val());
+			jQuery2('#list_id option:selected').text(jQuery2('#list_name').val()).data('name', jQuery2('#list_name').val());
 		},
 		function () {
 			Redcase.ExecutionSuiteTree.tree.refresh();
@@ -101,28 +101,29 @@ Redcase.ExecutionSuiteTree.prepareContextItems = function () {
 
 	Redcase.ExecutionSuiteTree.specialSuiteItems = {
 		addSuite : {
-			'label' : 'Add suite',
+			'label' : Redcase.t('add_suite'),
 			'action' : Redcase.ExecutionSuiteTree.addSuiteDialog
 		}
 	}
 
 	Redcase.ExecutionSuiteTree.suiteItems = {
 		renameSuite : {
-			'label' : 'Rename suite',
+			'label' : Redcase.t('rename_suite'),
 			'action' : Redcase.ExecutionSuiteTree.renameSuiteDialog
 		}
 	}
 
 	Redcase.ExecutionSuiteTree.commonItems = {
 		deleteItem : {
-			'label' : 'Delete',
+			'label' : Redcase.t('delete'),
 			'action' : Redcase.ExecutionSuiteTree.deleteItem
 		}
 	}
 }
 
 Redcase.ExecutionSuiteTree.refresh = function() {
-	jQuery2('#list_name').val(jQuery2('#list_id').children(':selected').text());
+	var selected = jQuery2('#list_id').children(':selected');
+	jQuery2('#list_name').val(selected.data('name') || selected.text());
 	Redcase.ExecutionSuiteTree.tree.refresh();	
 }
 
@@ -135,7 +136,7 @@ Redcase.ExecutionSuiteTree.addSuite = function (parent_id, name, successCallback
 			'parent_id' : parent_id
 		},
 		success : successCallback,
-		errorMessage : "Execution suite '" + name + "' can't be created",
+		errorMessage : Redcase.t('create_execution_suite_failed', {name: name}),
 		complete : completeCallback
 	});
 	Redcase.apiCall(apiParms);
@@ -146,11 +147,12 @@ Redcase.ExecutionSuiteTree.addSuiteDialog = function (params) {
 	node = Redcase.ExecutionSuiteTree.tree.get_node(params.reference);
 
 	jQuery('#redcase-dialog').dialog({
-		title : 'Creating execution suite',
+		title : Redcase.t('new_execution_suite'),
 		modal : true,
+		closeText : Redcase.t('close'),
 		resizable : false,
 		buttons : {			
-			'OK' : function() {
+			[Redcase.t('ok')] : function() {
 				var 
 				name = jQuery2('#redcase-dialog-value').val();
 				Redcase.ExecutionSuiteTree.addSuite(
@@ -173,7 +175,7 @@ Redcase.ExecutionSuiteTree.deleteSuite = function (suite_id, name, successCallba
 	var apiParms = {};	
 	jQuery2.extend(apiParms, Redcase.methods.executionSuite.actions.destroy(suite_id), {
 		success : successCallback,
-		errorMessage : "Execution suite '" + name + "' can't be deleted"
+		errorMessage : Redcase.t('delete_execution_suite_failed', {name: name})
 	});
 	Redcase.apiCall(apiParms);	
 }
@@ -201,7 +203,7 @@ Redcase.ExecutionSuiteTree.deleteCase = function (node) {
 			Redcase.ExecutionSuiteTree.tree.delete_node(node);
 			Redcase.full();
 		},
-		errorMessage : "Test case '" + node.text + "' can't be deleted"
+		errorMessage : Redcase.t('delete_case_failed', {name: node.text})
 	});
 	Redcase.apiCall(apiParms);
 }
@@ -228,7 +230,7 @@ Redcase.ExecutionSuiteTree.renameSuite = function (suite_id, name, successCallba
 			'new_name' : name
 		},
 		success : successCallback,
-		errorMessage : "Execution suite '" + name + "' can't be renamed",
+		errorMessage : Redcase.t('rename_execution_suite_failed', {name: name}),
 		complete : completeCallback
 	});
 	Redcase.apiCall(apiParms);
@@ -239,11 +241,12 @@ Redcase.ExecutionSuiteTree.renameSuiteDialog = function (params) {
 	node = Redcase.ExecutionSuiteTree.tree.get_node(params.reference);
 
 	jQuery('#redcase-dialog').dialog({
-		title : 'Renaming execution suite',
+		title : Redcase.t('rename_execution_suite'),
 		modal : true,
+		closeText : Redcase.t('close'),
 		resizable : false,
 		buttons : {
-			'OK' : function() {
+			[Redcase.t('ok')] : function() {
 				var 
 				name = jQuery('#redcase-dialog-value').val();
 				Redcase.ExecutionSuiteTree.renameSuite(node.original.suite_id, name, function () {
@@ -299,7 +302,7 @@ Redcase.ExecutionSuiteTree.moveTestCase = function (new_node, org_node, new_inst
 		error : function () {
 			new_instance.delete_node(new_node);
 		},
-		errorMessage : "Test case '" + org_node.text + "' can't be moved"
+		errorMessage : Redcase.t('move_case_failed', {name: org_node.text})
 	});	
 	Redcase.apiCall(apiParms);
 }
@@ -318,7 +321,7 @@ Redcase.ExecutionSuiteTree.moveTestSuite = function (new_node, org_node, new_ins
 		error : function () {
 			new_instance.delete_node(new_node);
 		},
-		errorMessage : "Test suite '" + org_node.text + "' can't be moved"
+		errorMessage : Redcase.t('move_execution_suite_failed', {name: org_node.text})
 	});
 	Redcase.apiCall(apiParms);
 }
@@ -338,13 +341,13 @@ Redcase.ExecutionSuiteTree.copyTestCase = function (new_node, org_node, new_inst
 					Redcase.full();
 				} else {
 					new_instance.delete_node(new_node);
-					Redcase.errorBox("Test case '" + org_node.text + "' can't be added");
+					Redcase.errorBox(Redcase.t('add_case_failed', {name: org_node.text}));
 				}
 			},
 			error : function () {
 				new_instance.delete_node(new_node);
 			},
-			errorMessage : "Test case '" + org_node.text + "' can't be added"
+			errorMessage : Redcase.t('add_case_failed', {name: org_node.text})
 		});		
 		Redcase.apiCall(apiParms);
 	} else {
@@ -389,6 +392,8 @@ Redcase.ExecutionSuiteTree.build = function (params) {
 	Redcase.ExecutionSuiteTree.tree = jQuery2('#management_execution_suite_tree_id').jstree({
 			// Core config
 			'core' : {
+				'force_text' : true,
+				'strings' : {'Loading ...': Redcase.t('loading')},
 				'check_callback' : Redcase.ExecutionSuiteTree.CheckCallback,
 				//'data' : [params.root]
 				'data' : {

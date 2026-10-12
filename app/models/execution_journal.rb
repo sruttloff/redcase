@@ -1,11 +1,9 @@
 
 class ExecutionJournal < ActiveRecord::Base
-
-	unloadable
 	belongs_to :test_case
-	belongs_to :version
+	belongs_to :version, optional: true
 	belongs_to :result, :class_name => 'ExecutionResult'
-	belongs_to :executor, :class_name => 'User'
+	belongs_to :executor, :class_name => 'User', optional: true
 	belongs_to :environment, :class_name => 'ExecutionEnvironment'
 	# attr_protected :id
 
@@ -18,7 +16,7 @@ class ExecutionJournal < ActiveRecord::Base
 		'comment'     => comment,
 		'executor'    => (executor.nil? ? '' : executor.name),
 		'environment' => environment.name,
-		'version'     => version.name,
+		'version'     => version&.name.to_s,
 		'report'	  => ''
 	}
 	end

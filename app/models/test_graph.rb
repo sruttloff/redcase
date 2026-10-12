@@ -1,8 +1,5 @@
 
 class TestGraph
-
-	unloadable
-
 	def self.get_data(version_id, environment_id, suite_id, project_id)
 		all = ExecutionResult.all.inject({}) { |names, result|
 			names[result.name] = 0
@@ -12,7 +9,7 @@ class TestGraph
 		TestCase
 			.includes(execution_journals: [ :result ])
 			.joins(:issue)
-			.where({ 'issues.project_id' => project_id })
+			.merge(Issue.visible(User.current).where(project_id: project_id))
 			.each { |tc|
 				included =
 					if suite_id.to_i >= 0
@@ -20,6 +17,7 @@ class TestGraph
 					else
 						tc.execution_suites.any?
 					end
+				next unless included
 				if included
 					jns = tc.execution_journals.select { |x|
 						(x.version_id == version_id) && (x.environment_id == environment_id)

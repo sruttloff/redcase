@@ -12,7 +12,7 @@ var RedcaseGraph = function($) {
 					'<tr>' +
 						'<td class="jschart-legend-cell"' +
 						   ' style="width: 10px; background-color: <%=segments[i].fillColor %>"></td>' +
-						'<td><% if (segments[i].label) { %><%= segments[i].label %><% } %></td>' +
+						'<td><% if (segments[i].label) { %><%= jQuery("<span>").text(segments[i].label).html() %><% } %></td>' +
 					'</tr>' +
 				'<% } %>' +
 			'</table>'
@@ -43,7 +43,7 @@ var RedcaseGraph = function($) {
 				success: function(data) {
 					self.refresh(data);
 				},
-				errorMessage: "Couldn't load graph"
+				errorMessage: Redcase.t('load_graph_failed')
 			}
 		);
 		Redcase.apiCall(apiParams);
@@ -85,4 +85,3 @@ jQuery(function($) {
 	}
 	Redcase.Graph = new RedcaseGraph($);
 });
-

@@ -1,7 +1,5 @@
 
 class RedcaseController < ApplicationController
-
-	unloadable
 	helper RedcaseHelper
 	before_action :find_project, :authorize
 
@@ -46,7 +44,7 @@ class RedcaseController < ApplicationController
 	end
 
 	def get_attachment_urls
-		issue = Issue.find(params[:issue_id])
+		issue = Issue.visible(User.current).where(project_id: @project.id).find(params[:issue_id])
 		result =  issue.attachments.collect { |a| {
 			:url => url_for(
 				# TODO: This probably will fail if Redmine is running not in the
@@ -66,7 +64,8 @@ class RedcaseController < ApplicationController
 		@project = Project.find(params[:id] || params[:project_id])
 		can_view = User.current.allowed_to?(:view_test_cases, @project)
 		can_edit = User.current.allowed_to?(:edit_test_cases, @project)
-		render_403 unless (can_view || can_edit)
+		can_execute = User.current.allowed_to?(:execute_test_cases, @project)
+		render_403 unless (can_view || can_edit || can_execute)
 	end
 
 end

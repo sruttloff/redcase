@@ -1,17 +1,11 @@
 
 require 'redmine'
 require 'acts_as_tree'
-require_relative 'lib/issue_patch'
-require_relative 'lib/project_patch'
-require_relative 'lib/version_patch'
-require_relative 'lib/user_patch'
-require_relative 'lib/redcase_override'
-
-# Rails 6+ no longer provides `unloadable`; define a harmless no-op for older plugin code
-unless Kernel.method_defined?(:unloadable)
-  module Kernel
-    def unloadable(*args); end
-  end
+# Keep the listener class outside autoload paths. Re-register it if Redmine's
+# hook registry is reloaded; its methods resolve the current model constants.
+require_relative 'hooks/redcase_override'
+unless Redmine::Hook.listeners.any? { |listener| listener.is_a?(RedcaseOverride::RO) }
+  Redmine::Hook.add_listener(RedcaseOverride::RO)
 end
 
 Redmine::Plugin.register :redcase do
@@ -19,7 +13,8 @@ Redmine::Plugin.register :redcase do
 	name 'Redcase'
 	description 'Test cases management plugin for Redmine'
 	author 'Bugzinga Team'
-	version '1.0'
+	version '1.1.0'
+	requires_redmine :version_or_higher => '6.1.0'
 
 	permission :view_test_cases, {
 		:redcase => [
@@ -122,6 +117,13 @@ Redmine::Plugin.register :redcase do
 			:index
 		],
 		'redcase/executionsuites' => [
+			:index,
+			:show
+		],
+		'redcase/graph' => [
+			:show
+		],
+		'redcase/combos' => [
 			:index
 		]
 	}
@@ -134,19 +136,18 @@ Redmine::Plugin.register :redcase do
 			:if => proc { |p|
 				can_view = User.current.allowed_to?(:view_test_cases, p)
 				can_edit = User.current.allowed_to?(:edit_test_cases, p)
+				can_execute = User.current.allowed_to?(:execute_test_cases, p)
 				tracker_exists = p.trackers.any? { |t| (t.name == 'Test case') }
-				(can_view || can_edit) && tracker_exists
+				(can_view || can_edit || can_execute) && tracker_exists
 			},
-			:caption => 'Test cases',
+			:caption => :'redcase.label_test_cases',
 			:after => :new_issue
 		}
 
-	# Rails.configuration.to_prepare do
-		Issue.send :include, IssuePatch
-		Project.send :include, ProjectPatch
-		Version.send :include, VersionPatch
-		User.send :include, UserPatch
-	# end
+	# Redmine runs this initializer in to_prepare, including after model reloads.
+	Issue.include IssuePatch unless Issue < IssuePatch
+	Project.include ProjectPatch unless Project < ProjectPatch
+	Version.include VersionPatch unless Version < VersionPatch
+	User.include UserPatch unless User < UserPatch
 
 end
-

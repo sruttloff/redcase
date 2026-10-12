@@ -1,7 +1,5 @@
 
 class ExecutionEnvironment < ActiveRecord::Base
-
-	unloadable
 	belongs_to :project
 	has_many(
 		:journals,

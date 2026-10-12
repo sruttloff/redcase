@@ -1,15 +1,13 @@
 
-class Redcase::ExecutionjournalsController < ApplicationController
-
-	unloadable
+class Redcase::ExecutionjournalsController < Redcase::BaseController
 	before_action :find_project, :authorize
 
 	def index
 		journals =
 			if !params[:issue_id].nil?
-				ExecutionJournal.find_by_issue_id(params[:issue_id])
+				project_test_cases.find_by!(issue_id: params[:issue_id]).execution_journals.order(created_on: :desc)
 			else
-				ExecutionJournal.order(created_on: :desc)
+				ExecutionJournal.where(test_case_id: project_test_cases.select(:id)).order(created_on: :desc)
 			end
 		render :json => journals.map(&:to_json)
 	end
@@ -20,6 +18,8 @@ class Redcase::ExecutionjournalsController < ApplicationController
 	end
 
 	def create
+		return render_403 unless User.current.allowed_to?(:add_issues, @project)
+		testcase = project_test_cases.find_by!(issue_id: params[:testcase_id]).issue
 		user = User.current
 		tracker = @project.trackers.find_by(name: "Bug")
 		status = IssueStatus.find_by(name: "New")
@@ -29,12 +29,11 @@ class Redcase::ExecutionjournalsController < ApplicationController
 			:project => @project,
 			:tracker => tracker
 		)
-		issue.subject = "Failed #{params[:environment]}: #{params[:title]}"
+		issue.subject = RedcaseTranslation.text('text_failed_issue_subject', environment: params[:environment].to_s, title: params[:title].to_s)
 		issue.description = "#{params[:description]}"
 		issue.fixed_version = version
 		issue.save!
 
-		testcase = Issue.find(params[:testcase_id])
 		IssueRelation.create!(:relation_type => 'relates', :issue_from => issue, :issue_to => testcase)
 
 		Rails.logger.info "created issue #{issue.id}"
